@@ -8,3 +8,7 @@
 .idea/workspace.xml
 /.idea
 /tools/__pycache__
+/local_deprecated
+/local_test
+/local_visualization
+cfg/local_config.py
