@@ -13,3 +13,4 @@ local_config.py
 /local_deprecated
 /local_visualization
 /database/__pycache__
+local_deprecated.zip
