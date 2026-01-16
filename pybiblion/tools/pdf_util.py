@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Extract pdf structure in XML format"""
+import json
 import logging
 import os.path
 import re
@@ -256,9 +257,24 @@ def extract_title_and_abstract(md_pth: str):
         return title, abstract
 
 
+def get_toc_from_mineru_rst(rst_path: str):
+    """
+    从 mineru rst 的 json 文件中提取所有 text_level=1 的标题
+    返回一个 list[str]
+    """
+    with open(rst_path, "r", encoding="utf-8") as f:
+        data = json.load(f)
 
+    # 有的 json 最外层就是 list
+    if not isinstance(data, list):
+        raise ValueError("JSON 格式错误，应该是一个列表")
+
+    titles = [item["text"] for item in data if item.get("text_level") == 1]
+    return titles
 
 if __name__ == "__main__":
     # titles = get_subtitles(r'xxx')
     # print(titles)
+    toc = get_toc_from_mineru_rst(r'E:\SLR_minerU_RST\1905.06658v4\1905.06658v4_content_list.json')
+    print(toc)
     pass

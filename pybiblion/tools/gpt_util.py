@@ -28,7 +28,7 @@ from typing import Dict
 
 import langchain
 from langchain.chains import LLMChain
-from langchain_core.output_parsers import CommaSeparatedListOutputParser
+from langchain_core.output_parsers import CommaSeparatedListOutputParser, StrOutputParser
 # import langchain.chains.retrieval_qa.base
 from langchain.prompts import PromptTemplate
 
@@ -479,6 +479,95 @@ def get_background_future_app(pth, default_model="gpt-4o-mini", temperature=0):
         return rst
 
 
+def check_abs_structure(abs, default_model="gpt-4o-mini", temperature=0):
+
+
+    prompt_template = """
+    You are an academic assistant. 
+    I will give you the text of an abstract. 
+    Your task is to decide whether it is a **structured abstract** (with explicit section labels such as "Background", "Objective", "Methods", "Results", "Conclusion", etc.) or just a normal narrative abstract.
+    
+    Rules:
+    - If the abstract clearly has section headings or labeled segments (even partial ones like "Background:", "Aim:", "Methods:"), return 1.
+    - If it is a single block of text without labeled subsections, return 0.
+    - Do not check for full compliance with PRISMA; just judge based on visible structured segmentation.
+    - Return only a single digit: 0 or 1.
+    
+    Abstract:
+    {abs}
+    """
+
+    prompt = ChatPromptTemplate.from_template(prompt_template)
+
+    model = ChatOpenAI(model_name=default_model, temperature=temperature)
+
+    chain = prompt | model | StrOutputParser()
+    # print(instructions)
+    result = chain.invoke({"abs": abs}).strip()
+    if result not in ["0", "1"]:
+        result = "0"  # fallback
+    return int(result)
+
+
+from typing import List
+from langchain.prompts import ChatPromptTemplate
+from langchain_openai import ChatOpenAI
+from langchain.schema.output_parser import StrOutputParser
+
+from typing import List
+from langchain.prompts import ChatPromptTemplate
+from langchain_openai import ChatOpenAI
+from langchain.schema.output_parser import StrOutputParser
+
+def check_middle_typology(
+    section_titles: List[str],
+    default_model: str = "gpt-4o-mini",
+    temperature: float = 0.0
+) -> str:
+    """
+    依据“章节/小节标题”判断综述主体组织类型：
+    - cluster   : 按方法家族/架构/组件分组（CNN/Transformer、template-based、voting-based、encoder-decoder、SVM…）
+    - challenge : 按任务/问题/目标分组（localization、detection、segmentation、tracking、pose estimation、grasp、re-id、retrieval…）
+    - hybrid    : 两种模式在主体中并行且都很明显（如按任务分章、章内再按方法家族细分）
+    - other     : 不属于以上（纯时间线、纯应用域、强叙述无明显结构）
+    """
+    titles_str = "\n".join(f"- {t}" for t in section_titles)
+
+    prompt_template = """
+You are an academic assistant. Classify the ORGANIZATION TYPE of a survey's middle part using ONLY its section/subsection TITLES.
+
+Labels:
+- "cluster"   : grouped by method families/architectures/components (e.g., CNN/Transformer, encoder-decoder, attention-based, template-based, correspondence-based, voting-based, SVM-based, graph-based, point-cloud-based).
+- "challenge" : grouped by tasks/problems/goals (e.g., localization, detection, segmentation, tracking, identification, pose estimation, interpretation, recognition, re-identification, retrieval, reconstruction, grasping, activity recognition, domain adaptation).
+- "hybrid"    : both patterns are clearly present in the core review (e.g., sections by tasks and, within each task, subsections by method families; or separate sections mixing both extensively).
+
+Guidelines:
+- Treat task/goal nouns (localization/detection/segmentation/tracking/…/pose estimation/interpretation/recognition) as STRONG "challenge" signals.
+- Treat method-family/architecture nouns (template-based/voting-based/correspondence-based/CNN/Transformer/encoder-decoder/attention/U-Net/SVM/graph-based) as STRONG "cluster" signals.
+- Ignore utility sections: datasets, metrics, applications, related work, discussion, conclusion, future directions, acknowledgments, references.
+- If top-level sections are tasks and most subsections are also tasks → "challenge".
+- If both task sections and method-family subsections are widespread → "hybrid".
+Return EXACTLY one word from: cluster, challenge, hybrid.
+
+Section Titles:
+{titles}
+""".strip()
+
+    prompt = ChatPromptTemplate.from_template(prompt_template)
+    model = ChatOpenAI(model_name=default_model, temperature=temperature)
+    chain = prompt | model | StrOutputParser()
+    result = chain.invoke({"titles": titles_str}).strip().lower()
+
+    # ---- Heuristic fallback if LLM misbehaves ----
+    if result not in {"cluster", "challenge", "hybrid"}:
+            result = "FAIL"
+
+    return result
+
+
+
+
+# print(check_abs_structure('''Context In a previous study, we reported on a systematic literature review (SLR), based on a manual search of 13 journals and conferences undertaken in the period 1st January 2004 to 30th June 2007. Objective The aim of this on-going research is to provide an annotated catalogue of SLRs available to software engineering researchers and practitioners. This study updates our previous study using a broad automated search. Method We performed a broad automated search to find SLRs published in the time period 1st January 2004 to 30th June 2008. We contrast the number, quality and source of these SLRs with SLRs found in the original study. Results Our broad search found an additional 35 SLRs corresponding to 33 unique studies. Of these papers, 17 appeared relevant to the undergraduate educational curriculum and 12 appeared of possible interest to practitioners. The number of SLRs being published is increasing. The quality of papers in conferences and workshops has improved as more researchers use SLR guidelines. Conclusion SLRs appear to have gone past the stage of being used solely by innovators but cannot yet be considered a main stream software engineering research methodology. They are addressing a wide range of topics but still have limitations, such as often failing to assess primary study quality.'''))
 def get_benchmark(pth, default_model="gpt-4o-mini", temperature=0):
     with open(pth, 'r', encoding='utf-8') as md_file:
         fig_tab_resp = fig_tab_extractor(pth)
@@ -698,3 +787,59 @@ def fig_tab_extractor(pdf_pth):
 
         raise Exception('Error occurs in github_checker:', e)
         return None
+
+
+from typing import List
+from langchain_openai import ChatOpenAI
+from langchain.prompts import ChatPromptTemplate
+from langchain.output_parsers import PydanticOutputParser
+from pydantic import BaseModel, Field
+
+
+class TOC(BaseModel):
+    top_level_titles: List[str] = Field(
+        description="Extracted top-level (first-level) section titles exactly as they appear"
+    )
+
+
+def extract_top_level_titles(
+    section_titles: List[str],
+    default_model: str = "gpt-4o-mini",
+    temperature: float = 0.0
+) -> List[str]:
+    """
+    输入：所有章节/小节标题 (扁平list)
+    输出：仅一级标题（list[str]），一字不拉
+    """
+    titles_str = "\n".join(f"- {t}" for t in section_titles)
+
+    parser = PydanticOutputParser(pydantic_object=TOC)
+
+    prompt_template = """
+You are an academic assistant. 
+Your task: From the following list of ALL section/subsection titles, 
+IDENTIFY ONLY the top-level (first-level) section titles.
+
+Requirements:
+- Output EXACTLY in the required JSON format.
+- Do not add explanations.
+- Copy the titles EXACTLY as they appear, character by character.
+- Ignore abstract, acknowledgments, references, appendices.
+Format Instruction:
+{format_instructions}
+
+All Titles:
+{titles}
+""".strip()
+
+    prompt = ChatPromptTemplate.from_template(
+        prompt_template,
+        partial_variables={"format_instructions": parser.get_format_instructions()}
+    )
+
+    model = ChatOpenAI(model_name=default_model, temperature=temperature)
+
+    chain = prompt | model | parser
+    result: TOC = chain.invoke({"titles": titles_str})
+
+    return result.top_level_titles
