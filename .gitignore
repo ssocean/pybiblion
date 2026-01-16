@@ -7,8 +7,11 @@
 *.pkl
 .idea/workspace.xml
 /.idea
+local_config.py
 /tools/__pycache__
-/local_deprecated
 /local_test
+/local_deprecated
 /local_visualization
-cfg/local_config.py
+/database/__pycache__
+local_deprecated.zip
+/engineering

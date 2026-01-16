@@ -1,3 +1,14 @@
+Metadata-Version: 2.4
+Name: pybiblion
+Version: 0.1.0
+Summary: Academic paper intelligence toolkit
+Requires-Python: >=3.9
+Description-Content-Type: text/markdown
+License-File: LICENSE
+Requires-Dist: requests
+Requires-Dist: tqdm
+Dynamic: license-file
+
 <p align="center">
   <img src="demo/icon.png" alt="icon" width="25%">
 </p>
@@ -35,7 +46,7 @@ In most cases, you just need to install the required Python packages according t
 Or you may install the required dependencies with the following command:
 
 ```bash
-pip install -e .
+pip install -r requirements.txt
 ```
 
 ## Demo

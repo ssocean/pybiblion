@@ -3,22 +3,8 @@ import warnings
 import arxiv
 from retrievers.Author import Author
 from retrievers.Publication import Document
+from local_deprecated.Reference import filter_punctuation
 
-
-import re
-
-def filter_punctuation(text: str) -> str:
-    """
-    Remove punctuation and special characters from the input string,
-    retaining only alphanumerics and spaces.
-
-    Args:
-        text (str): Input string (e.g., a title)
-
-    Returns:
-        str: Cleaned string without punctuation
-    """
-    return re.sub(r'[^\w\s]', '', text)
 
 
 def get_arxiv_id_from_url(url:str):
@@ -59,6 +45,13 @@ class Arxiv_paper(Document):
                 matched_paper = next(search.results())
                 # print('fetching Done')
                 self._entity = matched_paper
+                # if matched_paper.entry_id == self.ref_obj:
+                #     self._entity = matched_paper
+                # else:
+                #     warnings.warn(
+                #         "Haven't fetch anything from arxiv.",
+                #         UserWarning)
+                #     self._entity = False
                 return self._entity
             elif self.ref_type == 'entity':
                 self._entity = self.ref_obj
@@ -147,3 +140,13 @@ class Arxiv_paper(Document):
         '''Can be up to 3 given url's associated with this article. '''
         return self.entity.links if self.entity.links else None
 
+# a = Arxiv_paper('segment anything')
+# # a.entity
+# print(a)
+# print(a.authors)
+# def my_function(name,**kwargs):
+#     print(name)
+# 
+#     for key, value in kwargs.items():
+#         print(key, value)
+# my_function(name='Alice', age=25, city='New York')

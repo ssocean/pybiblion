@@ -1,21 +1,17 @@
+# CONFIG FOR API KEYS
+import os
+import openai
+
 import os
 import json
 
-CONFIG_FILE_NAME = ".service_api_config.json"
+CONFIG_FILE_NAME = ".pybiblion_config.json"
 
 # Define the config schema
 _config_schema = {
     "s2api": {
         "require": False,
         "description": "Semantic Scholar API key (Free). Avoids rate-limiting."
-    },
-    "eskey": {
-        "require": False,
-        "description": "Easy Scholar API key (Free). For journal IF and conference levels."
-    },
-    "SERPER_API_KEY": {
-        "require": False,
-        "description": "Serper API key (Free). Enables search engine queries like Google."
     },
     "LLM_SERVICE_KEY": {
         "require": True,
@@ -25,29 +21,17 @@ _config_schema = {
         "require": True,
         "description": "Base URL for the LLM API endpoint."
     },
-    # OSS keys
-    "OSS_KEY_ID": {
-        "require": True,
-        "description": "Aliyun OSS Key ID"
-    },
-    "OSS_KEY_SECRET": {
-        "require": True,
-        "description": "Aliyun OSS Key Secret"
-    },
-    "OSS_ENDPOINT": {
-        "require": True,
-        "description": "Aliyun OSS Endpoint"
-    },
-    "OSS_BUCKET_NAME": {
-        "require": True,
-        "description": "Aliyun OSS Bucket Name"
+    # MySQL
+    "MYSQL_URL_REMOTE": {
+        "require": False,
+        "description": "SQLAlchemy-compatible MySQL connection URL"
     },
 
-    # MySQL
-    "MYSQL_URL": {
-        "require": True,
+    "MYSQL_URL_LOCAL": {
+        "require": False,
         "description": "SQLAlchemy-compatible MySQL connection URL"
-    }
+    },
+
 }
 
 
@@ -88,18 +72,11 @@ _validate(_config_data)
 
 # === Explicit variable exports ===
 s2api = _config_data.get("s2api") or None
-eskey = _config_data.get("eskey") or None
-SERPER_API_KEY = _config_data.get("SERPER_API_KEY") or None
 LLM_SERVICE_KEY = _config_data.get("LLM_SERVICE_KEY") or None
 BASE_URL = _config_data.get("BASE_URL") or None
-
 os.environ["OPENAI_API_KEY"] = LLM_SERVICE_KEY
 os.environ["OPENAI_API_BASE"] = BASE_URL
-os.environ["SERPER_API_KEY"] = SERPER_API_KEY
 
-OSS_KEY_ID = _config_data.get("OSS_KEY_ID") or None
-OSS_KEY_SECRET = _config_data.get("OSS_KEY_SECRET") or None
-OSS_ENDPOINT = _config_data.get("OSS_ENDPOINT") or None
-OSS_BUCKET_NAME = _config_data.get("OSS_BUCKET_NAME") or None
 
-MYSQL_URL = _config_data.get("MYSQL_URL") or None
+MYSQL_URL_REMTOTE = _config_data.get("MYSQL_URL_REMOTE") or None
+MYSQL_URL_LOCAL = _config_data.get("MYSQL_URL_LOCAL") or None

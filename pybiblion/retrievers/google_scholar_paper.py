@@ -1,7 +1,5 @@
 import warnings
 from datetime import datetime
-
-import scholarly
 from retry import retry
 from retrievers.Author import Author
 from retrievers.Publication import Document
@@ -18,7 +16,7 @@ class Google_paper(Document):
     def entity(self):
         if self._entity is None:
             if self.ref_type == 'title':
-                rst = scholarly.scholarly.search_single_pub(self.ref_obj)
+                rst = scholarly.search_single_pub(self.ref_obj)
                 if rst['bib']['title'].lower().replace(" ", "") == self.ref_obj.lower().replace(" ", ""):
                     self._entity = rst
                 else:
